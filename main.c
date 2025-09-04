@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <math.h>
 
+#include "matrix.h"
+
 double sigmoid(double x) {
   return 1 / (1 + exp(-x));
 }
@@ -13,49 +15,68 @@ int main() {
     {1, 0, 0},
     {1, 1, 1},
   };
+  double rate = 0.1;
 
-  double weight_x = 1;
-  double weight_y = 1;
-  double rate = 0.5;
-  double bias = -1;
+  matrix_t input = matrix_new(1, 2);
 
-  for (int i = 0; i < 1000; i++) {
-    double error = 0;
-    for (int j = 0; j < 4; j++) {
-      double output = sigmoid((data[j][0] * weight_x + data[j][1] * weight_y) + bias);
-      error += pow(data[j][2] - output, 2);
+  // layer 1
+  matrix_t weights_a = matrix_new(2, 2);
+  matrix_t bias_a = matrix_new(1, 2);
+  matrix_t delta_a = matrix_new(2, 1);
+//  matrix_t gradient_a = matrix_new(2, 2);
+  matrix_fill_random(weights_a, -1, 1);
+  matrix_fill_random(bias_a, -0.5, 0.5);
 
-      double delta = ((output - data[j][2]) * 2) * output * (1 - output);
-      double grad_x = delta * data[j][0];
-      double grad_y = delta * data[j][1];
-      double grad_b = delta;
+//  delta_l = delta_l+1 * weights(l) (*) a'
+  
+  // layer 2 (output)
+  matrix_t weights_b = matrix_new(2, 1);
+  matrix_t bias_b = matrix_new(1, 1);
+  matrix_t delta_b = matrix_new(1, 1);
+//  matrix_t gradient_b = matrix_new(2, 1);
+  matrix_fill_random(weights_b, -1, 1);
+  matrix_fill_random(bias_b, -0.5, 0.5);
 
-      weight_x -= rate * grad_x;
-      weight_y -= rate * grad_y;
-      bias -= rate * grad_b;
-    }
-
-    if (error / 4 < 0.0001) {
-      printf("model trained\n");
-      break;
-    }
-
-    if (i % 10 == 0) {
-      printf("%d iterations complete\n", i);
-      printf("updated weights: weight_x = %f, weight_y = %f\n", weight_x, weight_y);
-      printf("updated bias: bias = %f\n", bias);
-      printf("total error: %f\n", error/4);
-    }
-  }
-
-  printf("Final values\n");
-  printf("Weights: w_x: %f\tw_y: %f\n", weight_x, weight_y);
-  printf("Bias: %f\n", bias);
+  matrix_t a1 = matrix_new(1, 2);
+  matrix_t a2 = matrix_new(1, 1);
 
   for (int i = 0; i < 4; i++) {
-    double output = sigmoid((data[i][0] * weight_x + data[i][1] * weight_y) + bias);
-    printf("%f AND %f = %f (expected: %f)\n", data[i][0], data[i][1], output, data[i][2]);
+    input.data[0] = data[i][0];
+    input.data[1] = data[i][1];
+
+    // Layer 1
+    matrix_dot(a1, input, weights_a);
+    matrix_add(a1, a1, bias_a);
+    matrix_apply(a1, sigmoid);
+
+    // Layer 2
+    matrix_dot(a2, a1, weights_b);
+    matrix_add(a2, a2, bias_b);
+    matrix_apply(a2, sigmoid);
+
+    /* for (int k = 0; k < a2.rows; k++) { */
+    /*   for (int l = 0; l < a2.cols; l++) { */
+    /*     printf("%f ", a2.data[k * a2.cols + l]); */
+    /*   } */
+    /*   printf("\n"); */
+    /* } */
+
+    /* ============================== */
+    // Backward pass
+    delta_b.data[0] = 2 * (input.data[2] - a2.data[0]) * a2.data[0] * (1 - a2.data[0]);
+
+    matrix_dot(delta_a, delta_b, weights_b);
+    matrix_t derivatives = matrix_new(1, 2);
+    for (int i = 0; i < a1.rows; i++) {
+      for (int j = 0; j < a1.cols; j++) {
+        derivatives.data[i*a1.cols + j] = a1.data[i*a1.cols + j] * (1 - a1.data[i*a1.cols + j]);
+      }
+    }
+    matrix_hadamard(delta_a, delta_a, derivatives);
+    printf("==============================\n");
+    matrix_print(delta_a);
+    printf("==============================\n");
   }
- 
+
   return 0;
 }
