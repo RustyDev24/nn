@@ -9,9 +9,12 @@ typedef struct {
 
 matrix_t matrix_new(size_t rows, size_t cols);
 void matrix_add(matrix_t c, matrix_t a, matrix_t b);
+void matrix_sub(matrix_t c, matrix_t a, matrix_t b);
 void matrix_dot(matrix_t c, matrix_t a, matrix_t b);
 void matrix_hadamard(matrix_t c, matrix_t a, matrix_t b);
 void matrix_fill_random(matrix_t mat, int low, int high);
+matrix_t matrix_transpose(matrix_t mat);
+void matrix_scale(matrix_t mat, double scaler);
 void matrix_print(matrix_t mat);
 
 // Apply a function onto all the elements of the matrix (map over matrix elements)
